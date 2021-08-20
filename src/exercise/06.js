@@ -36,6 +36,19 @@ function useToggle({
   const {current: initialState} = React.useRef({on: initialOn})
   const [state, dispatch] = React.useReducer(reducer, initialState)
   const onIsControlled = controlledOn != null
+  const on = onIsControlled ? controlledOn : state.on
+
+  const {current: onWasControlled} = React.useRef(onIsControlled)
+  React.useEffect(() => {
+    warning(
+      !(onIsControlled && !onWasControlled),
+      `\`useToggle\` is changing from uncontrolled to be controlled. Components should not switch from uncontrolled to controlled (or vice versa). Decide between using a controlled or uncontrolled \`useToggle\` for the lifetime of the component. Check the \`on\` prop.`,
+    )
+    warning(
+      !(!onIsControlled && onWasControlled),
+      `\`useToggle\` is changing from controlled to be uncontrolled. Components should not switch from controlled to uncontrolled (or vice versa). Decide between using a controlled or uncontrolled \`useToggle\` for the lifetime of the component. Check the \`on\` prop.`,
+    )
+  }, [onIsControlled, onWasControlled])
 
   const hasOnChange = Boolean(onChange)
   React.useEffect(() => {
@@ -44,8 +57,6 @@ function useToggle({
       `An \`on\` prop was provided to useToggle without an \`onChange\` handler. This will render a read-only toggle. If you want it to be mutable, use \`initialOn\`. Otherwise, set either \`onChange\` or \`readOnly\`.`,
     )
   }, [hasOnChange, onIsControlled, readOnly])
-
-  const on = onIsControlled ? controlledOn : state.on
 
   const dispatchWithOnChange = (action) => {
     if (!onIsControlled) {
@@ -88,7 +99,7 @@ function Toggle({on: controlledOn, onChange, readOnly}) {
 }
 
 function App() {
-  const [bothOn, setBothOn] = React.useState(false)
+  const [bothOn, setBothOn] = React.useState()
   const [timesClicked, setTimesClicked] = React.useState(0)
 
   function handleToggleChange(state, action) {
@@ -109,8 +120,6 @@ function App() {
       <div>
         <Toggle on={bothOn} onChange={handleToggleChange} />
         <Toggle on={bothOn} onChange={handleToggleChange} />
-        <Toggle on={bothOn} readOnly={true} />
-        <Toggle on={bothOn} />
       </div>
       {timesClicked > 4 ? (
         <div data-testid="notice">
